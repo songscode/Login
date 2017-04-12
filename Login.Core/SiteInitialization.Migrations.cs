@@ -27,7 +27,7 @@ namespace Login
         private static void EnsureDatabase(string databaseKey)
         {
             var contextDb = new ContextDB(databaseKey);
-            var serverType = contextDb.Provider.GetFactory().GetType().Name;
+            var serverType = contextDb.Provider.ServerType;
             bool isSql = serverType.StartsWith("SqlServer", StringComparison.OrdinalIgnoreCase);
             bool isPostgres = !isSql & serverType.StartsWith("Postgres", StringComparison.OrdinalIgnoreCase);
             bool isMySql = !isSql && !isPostgres && serverType.StartsWith("MySql", StringComparison.OrdinalIgnoreCase);

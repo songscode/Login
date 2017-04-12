@@ -4567,6 +4567,8 @@ namespace PetaPoco
             get { return false; }
         }
 
+        public abstract string ServerType { get; }
+
         /// <summary>
         ///     Gets the <seealso cref="IPagingHelper" /> this provider supplies.
         /// </summary>
@@ -5246,6 +5248,8 @@ namespace PetaPoco
         ///     Gets a flag for whether the DB has native support for GUID/UUID.
         /// </summary>
         bool HasNativeGuidSupport { get; }
+
+        string ServerType { get; }
 
         /// <summary>
         ///     Escape a tablename into a suitable format for the associated database provider.
@@ -7082,6 +7086,8 @@ namespace PetaPoco
             return GetFactory("FirebirdSql.Data.FirebirdClient.FirebirdClientFactory, FirebirdSql.Data.FirebirdClient");
         }
 
+        public override string ServerType { get { return "Firebird"; } }
+
         public override string BuildPageQuery(long skip, long take, SQLParts parts, ref object[] args)
         {
             var sql = string.Format("{0}\nROWS @{1} TO @{2}", parts.Sql, args.Length, args.Length + 1);
@@ -7115,6 +7121,8 @@ namespace PetaPoco
             return GetFactory("MySql.Data.MySqlClient.MySqlClientFactory, MySql.Data, Culture=neutral, PublicKeyToken=c5687fc88969c44d");
         }
 
+        public override string ServerType { get { return "MySql"; } }
+
         public override string GetParameterPrefix(string connectionString)
         {
             if (connectionString != null && connectionString.IndexOf("Allow User Variables=true") >= 0)
@@ -7142,6 +7150,8 @@ namespace PetaPoco
             return DbProviderFactories.GetFactory("System.Data.OleDb");
         }
 
+        public override string ServerType { get { return "OleDb"; } }
+
         public override object ExecuteInsert(Database database, IDbCommand cmd, string primaryKeyName)
         {
             database.ExecuteNonQueryHelper(cmd);
@@ -7162,6 +7172,8 @@ namespace PetaPoco
         {
             return GetFactory("MySql.Data.MySqlClient.MySqlClientFactory, MySql.Data, Culture=neutral, PublicKeyToken=c5687fc88969c44d");
         }
+
+        public override string ServerType { get { return "MySql"; } }
 
         public override string GetParameterPrefix(string connectionString)
         {
@@ -7210,6 +7222,8 @@ namespace PetaPoco
             return GetFactory("Oracle.ManagedDataAccess.Client.OracleClientFactory, Oracle.ManagedDataAccess, Culture=neutral, PublicKeyToken=89b483f429c47342");
         }
 
+        public override string ServerType { get { return "OracleManaged"; } }
+
         public override string EscapeSqlIdentifier(string sqlIdentifier)
         {
             return string.Format("\"{0}\"", sqlIdentifier.ToUpperInvariant());
@@ -7252,6 +7266,8 @@ namespace PetaPoco
         {
             get { return true; }
         }
+
+        public override string ServerType { get { return "Postgres"; } }
 
         public override DbProviderFactory GetFactory()
         {
@@ -7300,6 +7316,8 @@ namespace PetaPoco
             return GetFactory("System.Data.SQLite.SQLiteFactory, System.Data.SQLite, Culture=neutral, PublicKeyToken=db937bc2d44ff139");
         }
 
+        public override string ServerType { get { return "Sqlite"; } }
+
         public override object MapParameterValue(object value)
         {
             if (value.GetType() == typeof(uint))
@@ -7336,6 +7354,8 @@ namespace PetaPoco
             return GetFactory("System.Data.SqlServerCe.SqlCeProviderFactory, System.Data.SqlServerCe, Culture=neutral, PublicKeyToken=89845dcd8080cc91");
         }
 
+        public override string ServerType { get { return "SqlServerCe"; } }
+
         public override string BuildPageQuery(long skip, long take, SQLParts parts, ref object[] args)
         {
             if (string.IsNullOrEmpty(parts.SqlOrderBy))
@@ -7359,6 +7379,8 @@ namespace PetaPoco
         {
             return GetFactory("System.Data.SqlClient.SqlClientFactory, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
         }
+
+        public override string ServerType { get { return "SqlServer"; } }
 
         private static readonly Regex simpleRegexOrderBy = new Regex(@"\bORDER\s+BY\s+", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.Compiled);
 
