@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Web.Hosting;
 using FluentMigrator.Runner.Announcers;
 using FluentMigrator.Runner.Initialization;
-using Serenity.Data;
+using Login.Common.PetaPoco;
 
 namespace Login
 {
@@ -26,8 +26,8 @@ namespace Login
         /// </summary>
         private static void EnsureDatabase(string databaseKey)
         {
-            var cs = SqlConnections.GetConnectionString(databaseKey);
-            var serverType = cs.Dialect.ServerType;
+            var contextDb = new ContextDB(databaseKey);
+            var serverType = contextDb.Provider.GetFactory().GetType().Name;
             bool isSql = serverType.StartsWith("SqlServer", StringComparison.OrdinalIgnoreCase);
             bool isPostgres = !isSql & serverType.StartsWith("Postgres", StringComparison.OrdinalIgnoreCase);
             bool isMySql = !isSql && !isPostgres && serverType.StartsWith("MySql", StringComparison.OrdinalIgnoreCase);
@@ -35,8 +35,7 @@ namespace Login
             if (!isSql && !isPostgres && !isMySql && !isSqlite)
                 return;
 
-            var cb = cs.ProviderFactory.CreateConnectionStringBuilder();
-            cb.ConnectionString = cs.ConnectionString;
+            var cb = contextDb.Provider.GetFactory().CreateConnectionStringBuilder();
             string catalogKey = "?";
 
             if (isSqlite)
@@ -54,9 +53,9 @@ namespace Login
                     return;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(dataFile));
-                using (var sqliteConn = SqlConnections.New(cb.ConnectionString, cs.ProviderName))
+                using (var sqliteConn = contextDb.Connection)
                 {
-                    var createFile = ((WrappedConnection)sqliteConn).ActualConnection.GetType().GetMethod("CreateFile", BindingFlags.Static);
+                    var createFile = sqliteConn.GetType().GetMethod("CreateFile", BindingFlags.Static);
                     if (createFile != null)
                         createFile.Invoke(null, new object[] { dataFile });
                 }
@@ -65,95 +64,70 @@ namespace Login
                 return;
             }
 
-            foreach (var ck in new[] { "Initial Catalog", "Database", "AttachDBFilename" })
+            foreach (var ck in new[] {"Initial Catalog", "Database", "AttachDBFilename"})
+            {
                 if (cb.ContainsKey(ck))
                 {
                     catalogKey = ck;
                     break;
                 }
 
+            }
+
             var catalog = cb[catalogKey] as string;
             cb[catalogKey] = null;
 
-            using (var serverConnection = SqlConnections.New(cb.ConnectionString, cs.ProviderName))
+            string databasesQuery = "SELECT * FROM sys.databases WHERE NAME = @name";
+            string createDatabaseQuery = @"CREATE DATABASE [{0}]";
+
+            if (isPostgres)
             {
-                try
-                {
-                    serverConnection.Open();
-                }
-                catch (SqlException ex)
-                {
-                    if (ex.ErrorCode != -2146232060)
-                        throw;
-
-                    const string oldVer = @"\v11.0";
-
-                    if (cb.ConnectionString.IndexOf(oldVer) >= 0)
-                        throw new Exception(
-                            "You don't seem to have SQL Express LocalDB 2012 installed.\r\n\r\n" +
-                            "If you have Visual Studio 2015 (with SQL LocalDB 2014) " +
-                            "try changing '" + databaseKey + "' connection string in WEB.CONFIG to:\r\n\r\n" +
-                            cs.ConnectionString.Replace(oldVer, @"\MSSqlLocalDB") + "\r\n\r\nor:\r\n\r\n" +
-                            cs.ConnectionString.Replace(oldVer, @"\v12.0") + "';\r\n\r\n" +
-                            "You can also try another SQL server type like .\\SQLExpress.");
-
-                    throw;
-                }
-
-                string databasesQuery = "SELECT * FROM sys.databases WHERE NAME = @name";
-                string createDatabaseQuery = @"CREATE DATABASE [{0}]";
-
-                if (isPostgres)
-                {
-                    databasesQuery = "select * from postgres.pg_catalog.pg_database where datname = @name";
-                    createDatabaseQuery = "CREATE DATABASE \"{0}\"";
-                }
-                else if (isMySql)
-                {
-                    databasesQuery = "SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @name";
-                    createDatabaseQuery = "CREATE DATABASE `{0}`";
-                }
-
-                if (serverConnection.Query(databasesQuery, new { name = catalog }).Any())
-                    return;
-
-                var isLocalServer = isSql &&
-                    serverConnection.ConnectionString.IndexOf(@"(localdb)\", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    serverConnection.ConnectionString.IndexOf(@".\") >= 0;
-
-                string command;
-                if (isLocalServer)
-                {
-                    var filename = Path.Combine(HostingEnvironment.MapPath("~/App_Data"), catalog);
-                    command = String.Format(@"CREATE DATABASE [{0}] ON PRIMARY (Name = N'{0}', FILENAME = '{1}.mdf') LOG ON (NAME = N'{0}_log', FILENAME = '{1}.ldf')",
-                        catalog, filename);
-
-                    if (File.Exists(filename + ".mdf"))
-                        command += " FOR ATTACH";
-                }
-                else
-                {
-                    command = String.Format(createDatabaseQuery, catalog);
-                }
-                serverConnection.Execute(command);
-                SqlConnection.ClearAllPools();
+                databasesQuery = "select * from postgres.pg_catalog.pg_database where datname = @0";
+                createDatabaseQuery = "CREATE DATABASE \"{0}\"";
             }
+            else if (isMySql)
+            {
+                databasesQuery = "SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @0";
+                createDatabaseQuery = "CREATE DATABASE `{0}`";
+            }
+
+            if (contextDb.Query<object>(databasesQuery, catalog).Any())
+                return;
+
+            var isLocalServer = isSql &&
+                contextDb.ConnectionString.IndexOf(@"(localdb)\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                contextDb.ConnectionString.IndexOf(@".\") >= 0;
+
+            string command;
+            if (isLocalServer)
+            {
+                var filename = Path.Combine(HostingEnvironment.MapPath("~/App_Data"), catalog);
+                command = String.Format(@"CREATE DATABASE [{0}] ON PRIMARY (Name = N'{0}', FILENAME = '{1}.mdf') LOG ON (NAME = N'{0}_log', FILENAME = '{1}.ldf')",
+                    catalog, filename);
+
+                if (File.Exists(filename + ".mdf"))
+                    command += " FOR ATTACH";
+            }
+            else
+            {
+                command = String.Format(createDatabaseQuery, catalog);
+            }
+            contextDb.Execute(command);
+            SqlConnection.ClearAllPools();
         }
 
         public static bool SkippedMigrations { get; private set; }
 
         private static void RunMigrations(string databaseKey)
         {
-            var cs = SqlConnections.GetConnectionString(databaseKey);
-            var connection = cs.ConnectionString;
-
-            string serverType = cs.Dialect.ServerType;
+            var contextDb = new ContextDB(databaseKey);
+            var serverType = contextDb.Provider.GetFactory().GetType().Name;
             bool isSqlServer = serverType.StartsWith("SqlServer", StringComparison.OrdinalIgnoreCase);
             bool isOracle = !isSqlServer && serverType.StartsWith("Oracle", StringComparison.OrdinalIgnoreCase);
 
             // safety check to ensure that we are not modifying an arbitrary database.
             // remove these lines if you want Login migrations to run on your DB.
-            if (!isOracle && cs.ConnectionString.IndexOf(typeof(SiteInitialization).Namespace +
+            if (!isOracle && contextDb.ConnectionString.IndexOf(typeof(SiteInitialization).Namespace +
                     @"_" + databaseKey + "_v2", StringComparison.OrdinalIgnoreCase) < 0)
             {
                 SkippedMigrations = true;
@@ -161,7 +135,7 @@ namespace Login
             }
 
             string databaseType = isOracle ? "OracleManaged" : serverType;
-            var connectionString = cs.ConnectionString;
+            var connectionString = contextDb.ConnectionString;
 
             using (var sw = new StringWriter())
             {
