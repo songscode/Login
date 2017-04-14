@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Login.Common.PetaPoco;
 using PetaPoco;
 
-namespace Login.Core.Entity
-{
+namespace Login.Core { 
     [Serializable]
     [TableName("Users")]
     [PrimaryKey("id")]
-    public class User
+    public partial class User : ContextDB.Record<User>
     {
         public int UserId { get; set; }
         public string Username { get; set; }
@@ -26,5 +26,9 @@ namespace Login.Core.Entity
         public DateTime? UpdateDate { get; set; }
         public int UpdateUserId { get; set; }
         public int IsActive { get; set; }
+
+        public string OpenIDClaimedIdentifier { get; set; }
+
+        public string OpenIDFriendlyIdentifier { get; set; }
     }
 }

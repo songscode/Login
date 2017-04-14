@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
@@ -34,8 +35,9 @@ namespace Login
             bool isSqlite = !isSql && !isPostgres && !isMySql && serverType.StartsWith("Sqlite", StringComparison.OrdinalIgnoreCase);
             if (!isSql && !isPostgres && !isMySql && !isSqlite)
                 return;
-
+           
             var cb = contextDb.Provider.GetFactory().CreateConnectionStringBuilder();
+            cb.ConnectionString = contextDb.ConnectionString;
             string catalogKey = "?";
 
             if (isSqlite)
@@ -77,7 +79,7 @@ namespace Login
             var catalog = cb[catalogKey] as string;
             cb[catalogKey] = null;
 
-            string databasesQuery = "SELECT * FROM sys.databases WHERE NAME = @name";
+            string databasesQuery = "SELECT * FROM sys.databases WHERE NAME = @0";
             string createDatabaseQuery = @"CREATE DATABASE [{0}]";
 
             if (isPostgres)
@@ -116,23 +118,12 @@ namespace Login
             SqlConnection.ClearAllPools();
         }
 
-        public static bool SkippedMigrations { get; private set; }
-
         private static void RunMigrations(string databaseKey)
         {
             var contextDb = new ContextDB(databaseKey);
-            var serverType = contextDb.Provider.GetFactory().GetType().Name;
+            var serverType = contextDb.Provider.ServerType;
             bool isSqlServer = serverType.StartsWith("SqlServer", StringComparison.OrdinalIgnoreCase);
             bool isOracle = !isSqlServer && serverType.StartsWith("Oracle", StringComparison.OrdinalIgnoreCase);
-
-            // safety check to ensure that we are not modifying an arbitrary database.
-            // remove these lines if you want Login migrations to run on your DB.
-            if (!isOracle && contextDb.ConnectionString.IndexOf(typeof(SiteInitialization).Namespace +
-                    @"_" + databaseKey + "_v2", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                SkippedMigrations = true;
-                return;
-            }
 
             string databaseType = isOracle ? "OracleManaged" : serverType;
             var connectionString = contextDb.ConnectionString;

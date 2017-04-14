@@ -1,0 +1,64 @@
+﻿
+@{
+    ViewBag.Title = "Authorize";
+}
+@using DotNetOpenAuth.OAuth2
+@model Login.Web.Models.AccountAuthorizeModel
+<h2>Authorize</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <h4>AccountAuthorizeModel</h4>
+
+        <div style="background-color: Yellow">
+            <b>Warning</b>: 不要将登录凭据给其他网站或应用程序。
+        </div>
+        <p>
+            @Html.Encode(Model.ClientApp)应用程序正在请求访问您帐户中的私人数据)。确认授权吗？
+        </p>
+        <p>
+            <b>授权范围: </b>
+            @Html.Encode(string.Join(" ", Model.Scope.ToArray()))
+        </p>
+
+        <hr/>
+
+        @Html.Hidden("IsApproved")
+        @Html.Hidden("client_id", Model.AuthorizationRequest.ClientIdentifier)
+        @Html.Hidden("redirect_uri", Model.AuthorizationRequest.Callback)
+        @Html.Hidden("state", Model.AuthorizationRequest.ClientState)
+        @Html.Hidden("scope", OAuthUtilities.JoinScopes(Model.AuthorizationRequest.Scope))
+        @Html.Hidden("response_type", Model.AuthorizationRequest.ResponseType == DotNetOpenAuth.OAuth2.Messages.EndUserAuthorizationResponseType.AccessToken ? "token" : "code")
+
+        @Html.ValidationSummary(true, "", new {@class = "text-danger"})
+
+        <div class="form-group" style="display: none" id="responseButtonsDiv">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" value="Yes" class="btn btn-default" onclick="document.getElementsByName('IsApproved')[0].value = true; return true;"/>
+                <input type="submit" value="No" class="btn btn-default" onclick="document.getElementsByName('IsApproved')[0].value = false; return true;"/>
+            </div>
+        </div>
+
+        <div id="javascriptDisabled">
+            <b>javascript似乎在浏览器中被禁用。 </b>当前需要支持javascript
+        </div>
+    </div>
+
+    <script language="javascript" type="text/javascript">
+			//<![CDATA[
+			// we use HTML to hide the action buttons and Javascript to show them
+			// to protect against click-jacking in an iframe whose javascript is disabled.
+			document.getElementById('responseButtonsDiv').style.display = 'block';
+			document.getElementById('javascriptDisabled').style.display = 'none';
+
+			// Frame busting code (to protect us from being hosted in an iframe).
+			// This protects us from click-jacking.
+			if (document.location !== window.top.location) {
+				window.top.location = document.location;
+			}
+			//]]>
+    </script>
+}

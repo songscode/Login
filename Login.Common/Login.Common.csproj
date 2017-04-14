@@ -54,6 +54,7 @@
     <Compile Include="PetaPoco\PetaPoco.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Throttler.cs" />
+    <Compile Include="Utilities\DateTimeExtension.cs" />
     <Compile Include="Utilities\StringHelper.cs" />
   </ItemGroup>
   <ItemGroup>

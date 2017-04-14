@@ -1,24 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Security;
 using Login.Common;
+using Login.Common.PetaPoco;
 using Login.Core.Entity;
 using PetaPoco;
 
 namespace Login.Core.Data
 {
-    public class UserDb: BaseDb
+    public class UserDB : BaseDB
     {
-        private UserDb()
+        private ContextDB db = NewDB();
+        private UserDB()
         {
-            
+
         }
-        public static UserDb New()
+        public static UserDB New()
         {
-            return new UserDb();
+            return new UserDB();
         }
         /// <summary>
         /// 获取用户信息
@@ -27,11 +30,8 @@ namespace Login.Core.Data
         /// <returns></returns>
         public User GetByUserId(int userId)
         {
-            using (var db=NewDB())
-            {
-                var user = db.SingleOrDefault<User>(new Sql().Where("userid=@0", userId));
-                return user;
-            }
+            var user = db.SingleOrDefault<User>(new Sql().Where("userid=@0", userId));
+            return user;
         }
 
         public bool Validate(ref string username, string password)
@@ -50,12 +50,9 @@ namespace Login.Core.Data
 
         private User GetByUsername(string username)
         {
-            using (var db = NewDB())
-            {
-                var user = db.Query<User>(new Sql().From("Users").Where("username=@0",username)).FirstOrDefault();
-                return user;
-            }
-            
+            var user = db.Query<User>(new Sql().From("Users").Where("username=@0", username)).FirstOrDefault();
+            return user;
+
         }
 
         private bool ValidateExistingUser(ref string username, string password, User user)
@@ -73,12 +70,12 @@ namespace Login.Core.Data
             var throttler = new Throttler("ValidateUser:" + username.ToLowerInvariant(), TimeSpan.FromMinutes(30), 50);
             if (!throttler.Check())
                 return false;
-            
+
 
             Func<bool> validatePassword = () => CalculateHash(password, user.PasswordSalt)
                 .Equals(user.PasswordHash, StringComparison.OrdinalIgnoreCase);
 
-            if (user.Source == "site" || user.Source == "sign" )
+            if (user.Source == "site" || user.Source == "sign")
             {
                 if (validatePassword())
                 {
@@ -106,7 +103,7 @@ namespace Login.Core.Data
 
             return false;
         }
-        
+
 
         /// <summary>
         /// SHA512加密
@@ -119,7 +116,7 @@ namespace Login.Core.Data
                 throw new ArgumentNullException();
 
             byte[] buffer = System.Text.Encoding.UTF8.GetBytes(s);
-#if COREFX
+#if SAMPLESONLY
             var sha512 = SHA512.Create();
 #else
             var sha512 = System.Security.Cryptography.SHA512Managed.Create();

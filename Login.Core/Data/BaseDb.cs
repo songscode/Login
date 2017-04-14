@@ -9,9 +9,9 @@ using Login.Common.PetaPoco;
 
 namespace Login.Core.Data
 {
-    public class BaseDb
+    public class BaseDB
     {
-        protected ContextDB NewDB(string databaseKey= "Default")
+        protected static ContextDB NewDB(string databaseKey= "Default")
         {
             return new ContextDB(databaseKey);
         }

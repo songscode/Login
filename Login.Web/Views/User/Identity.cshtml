@@ -1,0 +1,14 @@
+﻿
+@{
+    ViewBag.Title = "Identity";
+}
+
+<h2>@Html.Encode(ViewData["username"]) Identity</h2>
+
+
+@if (string.Equals(User.Identity.Name, ViewData["username"]))
+{
+    <p>
+        @Html.Encode(ViewData["username"]) OpenId的身份页面.
+    </p>
+}
