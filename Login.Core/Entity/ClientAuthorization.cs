@@ -11,7 +11,7 @@ namespace Login.Core.Entity
     [Serializable]
     [TableName("ClientAuthorization")]
     [PrimaryKey("AuthorizationId")]
-    public class ClientAuthorization : ContextDB.Record<ClientAuthorization>
+    public class ClientAuthorization : OperationData<ClientAuthorization>
     {
         public int AuthorizationId { get; set; }
         public DateTime CreatedOnUtc { get; set; }

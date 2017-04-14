@@ -11,7 +11,7 @@ namespace Login.Core.Entity
     [Serializable]
     [TableName("Nonce")]
     [PrimaryKey("Code")]
-    public class Nonce : ContextDB.Record<Nonce>
+    public class Nonce : OperationData<Nonce>
     {
         public string Context { get; set; }
         public string Code { get; set; }

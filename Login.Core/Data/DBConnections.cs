@@ -1,20 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlTypes;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Login.Core.Data
 {
     public static class DBConnections
     {
         private static Dictionary<string, Connection> dic = null;
+
+        public static string DefaultKey = "Default";
 #if SAMPLESONLY
         public static int Initial()
         {
-            string[] databaseKeys = new[] { "Default"};
+            string[] databaseKeys = new[] { DefaultKey };
             if (dic == null)
             {
                 dic=new Dictionary<string, Connection>();

@@ -163,6 +163,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\ConnectionAttribute.cs" />
+    <Compile Include="Common\OperationData.cs" />
     <Compile Include="Data\BaseDB.cs" />
     <Compile Include="Data\ClientAuthorizationDB.cs" />
     <Compile Include="Data\ClientDB.cs" />

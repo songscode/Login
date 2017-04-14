@@ -10,7 +10,7 @@ namespace Login.Core {
     [Serializable]
     [TableName("Users")]
     [PrimaryKey("id")]
-    public partial class User : ContextDB.Record<User>
+    public partial class User : OperationData<User>
     {
         public int UserId { get; set; }
         public string Username { get; set; }

@@ -11,7 +11,7 @@ namespace Login.Core
     [Serializable]
     [TableName("Clients")]
     [PrimaryKey("ClientId")]
-    public partial class Client: ContextDB.Record<Client>
+    public partial class Client: OperationData<Client>
     {
         public int ClientId { get; set; }
         public string ClientIdentifier { get; set; }

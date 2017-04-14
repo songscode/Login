@@ -11,7 +11,7 @@ namespace Login.Core.Entity
     [Serializable]
     [TableName("SymmetricCryptoKey")]
     [PrimaryKey("Bucket",AutoIncrement = false)]
-    public class SymmetricCryptoKey : ContextDB.Record<SymmetricCryptoKey>
+    public class SymmetricCryptoKey : OperationData<SymmetricCryptoKey>
     {
         public string Bucket { get; set; }
         public string Handle { get; set; }
