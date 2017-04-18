@@ -20,7 +20,12 @@ namespace Login.Core.Data
                 foreach (var databaseKey in databaseKeys)
                 {
                     var entry = ConfigurationManager.ConnectionStrings[databaseKey];
-                    dic.Add(databaseKey,new Connection {ConnectionString = entry.ConnectionString,ProviderName = entry.ProviderName});
+                    dic.Add(databaseKey,new Connection
+                    {
+                        ConnectionString = entry.ConnectionString
+                        ,ProviderName = entry.ProviderName
+                        ,DatabaseKey = databaseKey
+                    });
                 }
             }
             return dic.Count;
@@ -29,6 +34,7 @@ namespace Login.Core.Data
 		[Obsolete("DBConnections初始化，这里需要自己定义", true)]
 		public static int Initial()
         {
+        //todo 定义链接字符串
            throw new NotImplementedException();
         }
 #endif
@@ -61,5 +67,6 @@ namespace Login.Core.Data
     {
         public string ConnectionString { get; set; }
         public string ProviderName { get; set; }
+        public string DatabaseKey { get; set; }
     }
 }

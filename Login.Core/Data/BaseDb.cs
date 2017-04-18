@@ -12,7 +12,18 @@ namespace Login.Core.Data
 {
     public class BaseDB : Database
     {
-        protected static ContextDB NewDB(string databaseKey= "")
+        protected static ContextDB NewDB(Type type)
+        {
+            string databaseKey = "";
+            if (type != null)
+            {
+                var conn = type.GetCustomAttributes(typeof(ConnectionAttribute), true);
+                databaseKey = conn.Length == 0 ? DBConnections.DefaultKey : (conn[0] as ConnectionAttribute).Value;
+            }
+            return new ContextDB(databaseKey);
+        }
+
+        protected static ContextDB NewDB(string databaseKey = "")
         {
             if (string.IsNullOrEmpty(databaseKey))
             {
@@ -20,9 +31,7 @@ namespace Login.Core.Data
             }
             return new ContextDB(databaseKey);
         }
-
-
         protected ILog Log { get { return LogManager.GetLogger("systemlog"); } }
-        
+
     }
 }

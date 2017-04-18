@@ -168,16 +168,15 @@
     <Compile Include="Data\BaseDB.cs" />
     <Compile Include="Data\ClientAuthorizationDB.cs" />
     <Compile Include="Data\ClientDB.cs" />
-    <Compile Include="Data\DBConnections.cs" />
     <Compile Include="Data\NonceDB.cs" />
     <Compile Include="Data\SymmetricCryptoKeyDB.cs" />
     <Compile Include="Data\UserDB.cs" />
+    <Compile Include="DBConnections.cs" />
     <Compile Include="Entity\Client.cs" />
     <Compile Include="Entity\ClientAuthorization.cs" />
     <Compile Include="Entity\Nonce.cs" />
     <Compile Include="Entity\SymmetricCryptoKey.cs" />
     <Compile Include="Entity\User.cs" />
-    <Compile Include="Migrations\DefaultDB\DefaultDB_201704131609_Clients.cs" />
     <Compile Include="Migrations\MigrationUtils.cs" />
     <Compile Include="Migrations\DefaultDB\DefaultDB_201704111458_Initial.cs" />
     <Compile Include="OAuthMVC\Client.cs" />

@@ -10,9 +10,10 @@ namespace Login.Core.Entity
 {
     [Serializable]
     [TableName("Nonce")]
-    [PrimaryKey("Code")]
+    [PrimaryKey("Id")]
     public class Nonce : OperationData<Nonce>
     {
+        public int Id { get; set; }
         public string Context { get; set; }
         public string Code { get; set; }
         public DateTime Timestamp { get; set; }

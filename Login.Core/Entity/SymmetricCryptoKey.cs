@@ -10,9 +10,10 @@ namespace Login.Core.Entity
 {
     [Serializable]
     [TableName("SymmetricCryptoKey")]
-    [PrimaryKey("Bucket",AutoIncrement = false)]
+    [PrimaryKey("Id",AutoIncrement = false)]
     public class SymmetricCryptoKey : OperationData<SymmetricCryptoKey>
     {
+        public int Id { get; set; }
         public string Bucket { get; set; }
         public string Handle { get; set; }
         public DateTime ExpiresUtc { get; set; }

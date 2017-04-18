@@ -12,14 +12,13 @@ using System.Web.Hosting;
 using FluentMigrator.Runner.Announcers;
 using FluentMigrator.Runner.Initialization;
 using Login.Common.PetaPoco;
+using Login.Core.Data;
 
 namespace Login
 {
     public static partial class SiteInitialization
     {
-        private static string[] databaseKeys = new[] {
-            "Default"
-        };
+        private static string[] databaseKeys = DBConnections.DatabaseKeys;
 
         /// <summary>
         /// Automatically creates a database for the template if it doesn't already exists.

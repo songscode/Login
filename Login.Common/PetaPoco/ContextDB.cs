@@ -10,7 +10,7 @@ namespace Login.Common.PetaPoco
     public partial class ContextDB : Database
     {
         public ContextDB()
-            : base("server=127.0.0.1;database=taskmanage;uid=root;pwd=song2017", "MySql.Data.MySqlClient")
+            : base("server=127.0.0.1;database=loginDB;uid=root;pwd=song2017", "MySql.Data.MySqlClient")
         {
             CommonConstruct();
         }
