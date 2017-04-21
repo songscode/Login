@@ -10,7 +10,7 @@ using PetaPoco;
 
 namespace Login.Core.Data
 {
-    public class BaseDB : Database
+    public class BaseDB 
     {
         protected static ContextDB NewDB(Type type)
         {

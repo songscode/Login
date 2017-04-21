@@ -23,6 +23,8 @@ namespace Login.Core.Data
         {
             return new UserDB();
         }
+
+
         /// <summary>
         /// 获取用户信息
         /// </summary>
@@ -33,22 +35,35 @@ namespace Login.Core.Data
             var user = db.SingleOrDefault<User>(new Sql().Where("userid=@0", userId));
             return user;
         }
-
-        public bool Validate(ref string username, string password)
+        /// <summary>
+        /// 设置密码
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="password"></param>
+        public void ResetPassword(int userId,string password)
         {
+            var user = GetByUserId(userId);
+            var passwordhash=CalculateHash(password, user.PasswordSalt);
+            user.PasswordHash = passwordhash;
+            user.Save();
+        }
+
+        public bool Validate(string username, string password,out User user)
+        {
+            user = null;
             if (username.IsTrimmedEmpty() || string.IsNullOrEmpty(password))
                 return false;
 
             username = username.TrimToEmpty();
 
-            var user = GetByUsername(username);
+            user = GetByUsername(username);
 
             if (user != null)
                 return ValidateExistingUser(ref username, password, user);
             return false;
         }
 
-        private User GetByUsername(string username)
+        public User GetByUsername(string username)
         {
             var user = db.Query<User>(new Sql().From("Users").Where("username=@0", username)).FirstOrDefault();
             return user;
@@ -75,30 +90,10 @@ namespace Login.Core.Data
             Func<bool> validatePassword = () => CalculateHash(password, user.PasswordSalt)
                 .Equals(user.PasswordHash, StringComparison.OrdinalIgnoreCase);
 
-            if (user.Source == "site" || user.Source == "sign")
+            if (validatePassword())
             {
-                if (validatePassword())
-                {
-                    throttler.Reset();
-                    return true;
-                }
-
-                return false;
-            }
-
-            if (user.Source != "ldap")
-                throw new ArgumentOutOfRangeException("userSource");
-
-            if (!string.IsNullOrEmpty(user.PasswordHash) &&
-                user.LastDirectoryUpdate != null &&
-                user.LastDirectoryUpdate.Value.AddHours(1) >= DateTime.Now)
-            {
-                if (validatePassword())
-                {
-                    throttler.Reset();
-                    return true;
-                }
-
+                throttler.Reset();
+                return true;
             }
 
             return false;

@@ -6,6 +6,7 @@ using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
+using Login.Web.Code;
 
 namespace Login.Web
 {
@@ -25,5 +26,14 @@ namespace Login.Web
         {
             SiteInitialization.ApplicationEnd();
         }
+
+
+
+        protected void Application_PostAuthenticateRequest(object sender, System.EventArgs e)
+        {
+            HttpContext.Current.User =HttpFormsAuthentication.TryParsePrincipal(HttpContext.Current);
+        }
+
+
     }
 }
