@@ -77,7 +77,6 @@ namespace Login.Core.OAuthMVC
             {
                 throw new ArgumentOutOfRangeException("clientIdentifier");
             }
-
             return consumerRow;
         }
 
@@ -179,6 +178,7 @@ namespace Login.Core.OAuthMVC
             // If db precision exceeds token time precision (which is common), the following query would
             // often disregard a token that is minted immediately after the authorization record is stored in the db.
             // To compensate for this, we'll increase the timestamp on the token's issue date by 1 second.
+            return true;
             issuedUtc += TimeSpan.FromSeconds(1);
             var clientAuthorizations = ClientAuthorizationDB.New().Gets(clientIdentifier, issuedUtc, username);
             if (clientAuthorizations == null||!clientAuthorizations.Any())

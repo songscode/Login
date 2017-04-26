@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using DotNetOpenAuth.Messaging;
@@ -29,15 +31,17 @@ namespace Login.Web.Controllers
         public IFormsAuthentication FormsAuth { get; private set; }
 
         [ValidateInput(false)]
-        public ActionResult Provider()
+        public async Task<ActionResult> Provider()
         {
-            IRequest request = OpenIdProvider.GetRequest();
+            IRequest request = await OpenIdProvider.GetRequestAsync(this.Request, this.Response.ClientDisconnectedToken);
             if (request != null)
             {
                 // Some requests are automatically handled by DotNetOpenAuth.  If this is one, go ahead and let it go.
                 if (request.IsResponseReady)
                 {
-                    return OpenIdProvider.PrepareResponse(request).AsActionResult();
+                    var response = await OpenIdProvider.PrepareResponseAsync(request, this.Response.ClientDisconnectedToken);
+                    Response.ContentType = response.Content.Headers.ContentType.ToString();
+                    return response.AsActionResult();
                 }
 
                 // This is apparently one that the host (the web site itself) has to respond to.
@@ -56,16 +60,17 @@ namespace Login.Web.Controllers
                     }
                 }
 
-                return this.ProcessAuthRequest();
+                return await this.ProcessAuthRequest();
             }
             else
             {
                 // No OpenID request was recognized.  This may be a user that stumbled on the OP Endpoint.  
                 return this.View();
             }
+            
         }
 
-        public ActionResult ProcessAuthRequest()
+        public async  Task<ActionResult> ProcessAuthRequest()
         {
             if (ProviderEndpoint.PendingRequest == null)
             {
@@ -73,8 +78,8 @@ namespace Login.Web.Controllers
             }
 
             // Try responding immediately if possible.
-            ActionResult response;
-            if (this.AutoRespondIfPossible(out response))
+            ActionResult response = await this.AutoRespondIfPossibleAsync();
+            if (response != null)
             {
                 return response;
             }
@@ -83,7 +88,7 @@ namespace Login.Web.Controllers
             if (ProviderEndpoint.PendingRequest.Immediate)
             {
                 // We can't stop to prompt the user -- we must just return a negative response.
-                return this.SendAssertion();
+                return await this.SendAssertion();
             }
 
             return this.RedirectToAction("AskUser");
@@ -94,7 +99,7 @@ namespace Login.Web.Controllers
         /// </summary>
         /// <returns>The response for the user agent.</returns>
         [Authorize]
-        public ActionResult AskUser()
+        public async Task<ActionResult> AskUser()
         {
             if (ProviderEndpoint.PendingRequest == null)
             {
@@ -103,20 +108,34 @@ namespace Login.Web.Controllers
             }
 
             // The user MAY have just logged in.  Try again to respond automatically to the RP if appropriate.
-            ActionResult response;
-            if (this.AutoRespondIfPossible(out response))
+            ActionResult response = await this.AutoRespondIfPossibleAsync();
+            if (response != null)
             {
                 return response;
             }
 
+            if (!ProviderEndpoint.PendingAuthenticationRequest.IsDirectedIdentity &&
+                !this.UserControlsIdentifier(ProviderEndpoint.PendingAuthenticationRequest))
+            {
+                return this.Redirect(this.Url.Action("LogOn", "Account", new { returnUrl = this.Request.Url }));
+            }
+
             this.ViewData["Realm"] = ProviderEndpoint.PendingRequest.Realm;
+
 
             return this.View();
         }
 
         [HttpPost, Authorize, ValidateAntiForgeryToken]
-        public ActionResult AskUserResponse(bool confirmed)
+        public async Task<ActionResult> AskUserResponse(bool confirmed)
         {
+            if (!ProviderEndpoint.PendingAuthenticationRequest.IsDirectedIdentity &&
+                !this.UserControlsIdentifier(ProviderEndpoint.PendingAuthenticationRequest))
+            {
+                // The user shouldn't have gotten this far without controlling the identifier we'd send an assertion for.
+                return new HttpStatusCodeResult((int)HttpStatusCode.BadRequest);
+            }
+
             if (ProviderEndpoint.PendingAnonymousRequest != null)
             {
                 ProviderEndpoint.PendingAnonymousRequest.IsApproved = confirmed;
@@ -130,14 +149,15 @@ namespace Login.Web.Controllers
                 throw new InvalidOperationException("There's no pending authentication request!");
             }
 
-            return this.SendAssertion();
+            return await this.SendAssertion();
+            
         }
 
         /// <summary>
         /// Sends a positive or a negative assertion, based on how the pending request is currently marked.
         /// </summary>
         /// <returns>An MVC redirect result.</returns>
-        public ActionResult SendAssertion()
+        public async Task<ActionResult> SendAssertion()
         {
             var pendingRequest = ProviderEndpoint.PendingRequest;
             var authReq = pendingRequest as IAuthenticationRequest;
@@ -208,18 +228,19 @@ namespace Login.Web.Controllers
                 }
             }
 
-            return OpenIdProvider.PrepareResponse(pendingRequest).AsActionResult();
+            var response = await OpenIdProvider.PrepareResponseAsync(pendingRequest, this.Response.ClientDisconnectedToken);
+            Response.ContentType = response.Content.Headers.ContentType.ToString();
+            return response.AsActionResult();
+            
         }
-
         /// <summary>
-        /// Attempts to formulate an automatic response to the RP if the user's profile allows it.
-        /// </summary>
-        /// <param name="response">Receives the ActionResult for the caller to return, or <c>null</c> if no automatic response can be made.</param>
-        /// <returns>A value indicating whether an automatic response is possible.</returns>
-        private bool AutoRespondIfPossible(out ActionResult response)
+		/// Attempts to formulate an automatic response to the RP if the user's profile allows it.
+		/// </summary>
+		/// <returns>The ActionResult for the caller to return, or <c>null</c> if no automatic response can be made.</returns>
+		private async Task<ActionResult> AutoRespondIfPossibleAsync()
         {
             // If the odds are good we can respond to this one immediately (without prompting the user)...
-            if (ProviderEndpoint.PendingRequest.IsReturnUrlDiscoverable(OpenIdProvider.Channel.WebRequestHandler) == RelyingPartyDiscoveryResult.Success
+            if (await ProviderEndpoint.PendingRequest.IsReturnUrlDiscoverableAsync(OpenIdProvider.Channel.HostFactories, this.Response.ClientDisconnectedToken) == RelyingPartyDiscoveryResult.Success
                 && User.Identity.IsAuthenticated
                 && this.HasUserAuthorizedAutoLogin(ProviderEndpoint.PendingRequest))
             {
@@ -231,8 +252,7 @@ namespace Login.Web.Controllers
                         || this.UserControlsIdentifier(ProviderEndpoint.PendingAuthenticationRequest))
                     {
                         ProviderEndpoint.PendingAuthenticationRequest.IsAuthenticated = true;
-                        response = this.SendAssertion();
-                        return true;
+                        return await this.SendAssertion();
                     }
                 }
 
@@ -240,13 +260,11 @@ namespace Login.Web.Controllers
                 if (ProviderEndpoint.PendingAnonymousRequest != null)
                 {
                     ProviderEndpoint.PendingAnonymousRequest.IsApproved = true;
-                    response = this.SendAssertion();
-                    return true;
+                    return await this.SendAssertion();
                 }
             }
 
-            response = null;
-            return false;
+            return null;
         }
 
         /// <summary>
@@ -299,7 +317,12 @@ namespace Login.Web.Controllers
             }
 
             Uri userLocalIdentifier = Login.Core.User.GetClaimedIdentifierForUser(User.Identity.Name);
-            return authReq.LocalIdentifier == userLocalIdentifier ||
+
+            // Assuming the URLs on the web server are not case sensitive (on Windows servers they almost never are),
+            // and usernames aren't either, compare the identifiers without case sensitivity.
+            // No reason to do this for the PPID identifiers though, since they *can* be case sensitive and are highly
+            // unlikely to be typed in by the user anyway.
+            return string.Equals(authReq.LocalIdentifier.ToString(), userLocalIdentifier.ToString(), StringComparison.OrdinalIgnoreCase) ||
                 authReq.LocalIdentifier == PpidGeneration.PpidIdentifierProvider.GetIdentifier(userLocalIdentifier, authReq.Realm);
         }
     }

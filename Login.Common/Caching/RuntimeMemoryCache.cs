@@ -12,7 +12,6 @@ namespace MicroFramework.Infrastructure.Caching
     ///<remarks>
     ///仅能在.net framework4.0及以上版本使用
     ///</remarks>
-    ///2013/7/13 15:01:09  
     public class RuntimeMemoryCache : ICache
     {
         private readonly MemoryCache _cache = MemoryCache.Default;

@@ -71,7 +71,7 @@ namespace Login.Core.OAuthMVC
 
             var key = SymmetricCryptoKeyDB.New().Get(bucket, handle);
 
-            return new CryptoKey(key.Secret, key.ExpiresUtc.AsUtc());
+            return new CryptoKey(Convert.FromBase64String(key.Secret), key.ExpiresUtc.AsUtc());
         }
 
         public IEnumerable<KeyValuePair<string, CryptoKey>> GetKeys(string bucket)
@@ -82,7 +82,7 @@ namespace Login.Core.OAuthMVC
             return
                 keys.Select(
                     e => new KeyValuePair<string, CryptoKey>
-                    (e.Handle,new CryptoKey(e.Secret, e.ExpiresUtc.AsUtc())));
+                    (e.Handle,new CryptoKey(Convert.FromBase64String(e.Secret), e.ExpiresUtc.AsUtc())));
         }
 
         public void StoreKey(string bucket, string handle, CryptoKey key)
@@ -91,7 +91,7 @@ namespace Login.Core.OAuthMVC
             {
                 Bucket = bucket,
                 Handle = handle,
-                Secret = key.Key,
+                Secret = Convert.ToBase64String(key.Key),
                 ExpiresUtc = key.ExpiresUtc,
             };
             keyRow.Save();

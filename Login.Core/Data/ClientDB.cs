@@ -22,7 +22,8 @@ namespace Login.Core.Data
         public Client GetByClientIdentifier(string clientIdentifier)
         {
             var db = NewDB();
-            return db.SingleOrDefault<Client>(new Sql().Where("ClientIdentifier=@0", clientIdentifier));
+            var sql = new Sql().Where("ClientIdentifier=@0", clientIdentifier);
+            return db.SingleOrDefault<Client>(sql);
         }
     }
 }

@@ -9,7 +9,7 @@ using PetaPoco;
 namespace Login.Core { 
     [Serializable]
     [TableName("Users")]
-    [PrimaryKey("id")]
+    [PrimaryKey("UserId")]
     public partial class User : OperationData<User>
     {
         public int UserId { get; set; }

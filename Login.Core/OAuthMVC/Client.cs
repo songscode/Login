@@ -32,7 +32,10 @@ namespace Login.Core
         [Ignore]
         ClientType IClientDescription.ClientType
         {
-            get { return (ClientType)this.ClientType; }
+            get
+            {
+                return (ClientType)this.ClientType;
+            }
         }
 
         /// <summary>
